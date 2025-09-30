@@ -3,6 +3,13 @@ import pandas as pd
 import random
 import time
 from datetime import datetime
+from spinner import spin_wheel_image, spin_wheel_image_org
+
+# import streamlit as st
+# import streamlit_authenticator as stauth
+# import os
+# from dotenv import load_dotenv
+# from yaml import safe_load
 
 # ----------------- Page Config -----------------
 st.set_page_config(
@@ -11,6 +18,32 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# with open("config.yaml") as f:
+#     config = safe_load(f)
+
+# authenticator = stauth.Authenticate(
+#     credentials            = config["credentials"],
+#     cookie_name            = "my_app",
+#     cookie_key             = config["cookie"]["key"],
+#     cookie_expiry_days     = 7
+# )
+# name, auth_status, username = authenticator.login('unrendered')
+
+# try:
+#     authenticator.login()
+# except Exception as e:
+#     st.error(e)
+
+# if auth_status is False:
+#     st.error("Incorrect username or password")
+# elif auth_status is None:
+#     st.warning("Please enter your username and password")
+# else:
+#     st.sidebar.success(f"Welcome {name}")
+#     # Business logic here
+#     if st.sidebar.button("Logout"):
+#         authenticator.logout("Logout", "sidebar")
 
 # ----------------- Custom CSS -----------------
 st.markdown("""
@@ -226,48 +259,60 @@ if "spin_complete" not in st.session_state:
     st.session_state.spin_complete = [False, False, False]
 
 # ----------------- Sidebar -----------------
-with st.sidebar:
-    st.markdown("### 🎯 Lucky Draw Setup")
+# with st.sidebar:
+#     st.markdown("### 🎯 Lucky Draw Setup")
     
-    # Only show file uploader if file not uploaded
-    if not st.session_state.file_uploaded:
-        st.markdown("#### 📂 Upload Participants")
-        uploaded_file = st.file_uploader(
-            "Choose a CSV file with 'Name' column", 
-            type="csv",
-            help="Upload a CSV file containing participant names"
-        )
+#     # Only show file uploader if file not uploaded
+#     if not st.session_state.file_uploaded:
+#         st.markdown("#### 📂 Upload Participants")
+#         uploaded_file = st.file_uploader(
+#             "Choose a CSV file with 'Name' column", 
+#             type="csv"
+#         )
         
-        if uploaded_file:
-            df = pd.read_csv(uploaded_file)
-            if "Name" not in df.columns:
-                st.error("❌ CSV must have a column named 'Name'")
-            else:
-                st.session_state.names = df["Name"].dropna().tolist()
-                st.session_state.file_uploaded = True
-                st.success(f"✅ {len(st.session_state.names)} participants loaded!")
-                st.rerun()
-    else:
-        st.success(f"✅ File Uploaded Successfully!")
-        st.info(f"Total Participants: {len(st.session_state.names)}")
+#         if uploaded_file:
+#             df = pd.read_csv(uploaded_file)
+#             if "Name" not in df.columns:
+#                 st.error("❌ CSV must have a column named 'Name'")
+#             else:
+#                 st.session_state.names = df["Name"].dropna().tolist()
+#                 st.session_state.file_uploaded = True
+#                 st.success(f"✅ {len(st.session_state.names)} participants loaded!")
+#                 st.rerun()
+#     # else:
+    #     st.success(f"✅ File Uploaded Successfully!")
+    #     st.info(f"Total Participants: {len(st.session_state.names)}")
         
-        # Reset button
-        if st.button("🔄 Upload New File"):
-            st.session_state.names = []
-            st.session_state.winners = []
-            st.session_state.draw_started = False
-            st.session_state.revealed_count = 0
-            st.session_state.is_spinning = False
-            st.session_state.file_uploaded = False
-            st.session_state.spin_complete = [False, False, False]
-            st.rerun()
+    #     # Reset button
+    #     if st.button("🔄 Upload New File"):
+    #         st.session_state.names = []
+    #         st.session_state.winners = []
+    #         st.session_state.draw_started = False
+    #         st.session_state.revealed_count = 0
+    #         st.session_state.is_spinning = False
+    #         st.session_state.file_uploaded = False
+    #         st.session_state.spin_complete = [False, False, False]
+    #         st.rerun()
     
     # Show statistics
-    if st.session_state.draw_started:
-        st.markdown("---")
-        st.markdown("### 📊 Draw Statistics")
-        st.metric("Winners Revealed", f"{st.session_state.revealed_count}/3")
-        st.metric("Remaining Draws", f"{3 - st.session_state.revealed_count}")
+    # if st.session_state.draw_started:
+    #     st.markdown("---")
+    #     st.markdown("### 📊 Draw Statistics")
+    #     st.metric("Winners Revealed", f"{st.session_state.revealed_count}/7")
+    #     # st.metric("Remaining Draws", f"{3 - st.session_state.revealed_count}")
+
+df = pd.read_csv("Employee list.csv")
+st.session_state.names = df["Name"].dropna().tolist()
+
+if st.button("🔄 Reset"):
+    st.session_state.names = []
+    st.session_state.winners = []
+    st.session_state.draw_started = False
+    st.session_state.revealed_count = 0
+    st.session_state.is_spinning = False
+    st.session_state.file_uploaded = False
+    st.session_state.spin_complete = [False, False, False]
+    st.rerun()
 
 # ----------------- Main Content -----------------
 # Title
@@ -278,132 +323,116 @@ st.markdown('<p class="subtitle">Experience the thrill of winning!</p>', unsafe_
 col1, col2, col3 = st.columns([1, 3, 1])
 
 with col2:
-    if st.session_state.file_uploaded:
+    # if st.session_state.file_uploaded:
         # Status card
-        with st.container():
-            st.markdown('<div class="status-card">', unsafe_allow_html=True)
-            cols = st.columns(3)
-            with cols[0]:
-                st.metric("🎮 Total Participants", len(st.session_state.names))
-            with cols[1]:
-                st.metric("🏆 Winners Selected", st.session_state.revealed_count)
-            with cols[2]:
-                st.metric("⏱️ Status", "Active" if st.session_state.draw_started else "Ready")
-            st.markdown('</div>', unsafe_allow_html=True)
-        
-        # Start Lucky Draw button
-        if not st.session_state.draw_started:
-            col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-            with col_btn2:
-                if st.button("🚀 START LUCKY DRAW", use_container_width=True):
-                    if len(st.session_state.names) < 3:
-                        st.error("⚠️ Need at least 3 participants!")
-                    else:
-                        st.session_state.winners = random.sample(st.session_state.names, 3)
-                        st.session_state.draw_started = True
-                        st.balloons()
-                        st.rerun()
-        
-        # Draw section
-        if st.session_state.draw_started:
-            st.markdown("---")
-            
-            # Spinning wheel area
-            spinning_container = st.container()
-            
-            # Reveal button
-            if st.session_state.revealed_count < 3:
-                col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-                with col_btn2:
-                    if not st.session_state.is_spinning:
-                        if st.button(f"🎰 SPIN FOR WINNER #{st.session_state.revealed_count + 1}", 
-                                   use_container_width=True):
-                            st.session_state.is_spinning = True
-                            st.rerun()
-            
-            # Spinning animation
-            if st.session_state.is_spinning:
-                with spinning_container:
-                    placeholder = st.empty()
-                    
-                    # Calculate spin duration (10-20 seconds randomly)
-                    spin_duration = random.uniform(10, 20)
-                    start_time = time.time()
-                    
-                    # Speed up and slow down phases
-                    while (time.time() - start_time) < spin_duration:
-                        elapsed = time.time() - start_time
-                        
-                        # Speed calculation (fast -> slow)
-                        if elapsed < spin_duration * 0.7:  # First 70% - fast
-                            delay = 0.05
-                        elif elapsed < spin_duration * 0.9:  # Next 20% - slowing
-                            delay = 0.2
-                        else:  # Last 10% - very slow
-                            delay = 0.5
-                        
-                        # Pick random name to show
-                        current_name = random.choice(st.session_state.names)
-                        
-                        # Display spinning name with animation
-                        placeholder.markdown(
-                            f'<div class="wheel-container">'
-                            f'<div class="spinning-names">'
-                            f'<span class="spinning-text">{current_name}</span>'
-                            f'</div></div>',
-                            unsafe_allow_html=True
-                        )
-                        
-                        time.sleep(delay)
-                    
-                    # Show winner
-                    winner = st.session_state.winners[st.session_state.revealed_count]
-                    placeholder.markdown(
-                        f'<div class="wheel-container">'
-                        f'<div class="spinning-names" style="background: linear-gradient(45deg, #FFD700, #FFA500); border-color: #FFD700;">'
-                        f'<span>🎉 {winner} 🎉</span>'
-                        f'</div></div>',
-                        unsafe_allow_html=True
-                    )
-                    
-                    st.session_state.is_spinning = False
-                    st.session_state.spin_complete[st.session_state.revealed_count] = True
-                    st.session_state.revealed_count += 1
-                    time.sleep(1)
+    with st.container():
+        # st.markdown('<div class="status-card">', unsafe_allow_html=True)
+        cols = st.columns(3)
+        with cols[0]:
+            st.metric("🎮 Total Participants", len(st.session_state.names))
+        with cols[1]:
+            st.metric("🏆 Winners Selected", st.session_state.revealed_count)
+        with cols[2]:
+            st.metric("⏱️ Status", "Active" if st.session_state.draw_started else "Ready")
+        # st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Start Lucky Draw button
+    if not st.session_state.draw_started:
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+        with col_btn2:
+            if st.button("🚀 START LUCKY DRAW", use_container_width=True):
+                if len(st.session_state.names) < 7:
+                    st.error("⚠️ Need at least 7 participants!")
+                else:
+                    st.session_state.winners = random.sample(st.session_state.names, 7)
+                    st.session_state.draw_started = True
                     st.balloons()
                     st.rerun()
+    
+    # Draw section
+    if st.session_state.draw_started:
+        st.markdown("---")
+        
+        # Spinning wheel area
+        spinning_container = st.container()
+        
+        # Reveal button
+        if st.session_state.revealed_count < 7:
+            col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+            with col_btn2:
+                if not st.session_state.is_spinning:
+                    if st.button(f"🎰 SPIN FOR WINNER #{st.session_state.revealed_count + 1}", 
+                                use_container_width=True):
+                        st.session_state.is_spinning = True
+                        st.rerun()
+        
+        # Spinning animation
+        
+        if st.session_state.is_spinning:
+            winner = st.session_state.winners[st.session_state.revealed_count]
+
+            # ⚠️ Set these so they match your actual wheel graphic:
+            #   - N must match the wheel's slices.
+            #   - start_angle_deg: where slice 0's CENTER is relative to pointer.
+            #     If your wheel's "slice 0" center is at TOP, use 0.
+            #     If at RIGHT, use 90; BOTTOM 180; LEFT 270.
+            #   - clockwise: True if your slice labels increment clockwise around the wheel.
+            spin_wheel_image_org(
+                names=st.session_state.names,
+                winner=winner,
+                duration_sec=2.4,
+                wheel_url=r"C:\Users\harsh.gupta\OneDrive - Jkmail\Documents\projects\lucky_draw\streamlit_app\lucky-draw\images.jpg",     # your uploaded/hosted image
+                num_slices=len(st.session_state.names),
+                start_angle_deg=0.0,       # adjust for your art
+                clockwise=True,            # adjust if your art is counter-clockwise
+                pointer_at="top",          # move to "right"/"bottom"/"left" if your pointer sits elsewhere
+                extra_spins=5,
+                size_px=420,
+                key=f"wheel_{st.session_state.revealed_count}"
+            )
+
+            # reveal and advance
+            import time
+            time.sleep(2.5)
+            st.success(f"🎉 Winner: {winner}")
+            st.session_state.is_spinning = False
+            st.session_state.spin_complete[st.session_state.revealed_count] = True
+            st.session_state.revealed_count += 1
+            st.balloons()
+            st.rerun()
+
+        
+        # Display all revealed winners
+        if st.session_state.revealed_count > 0:
+            st.markdown("---")
+            st.markdown("### 🏆 Winners Board")
             
-            # Display all revealed winners
-            if st.session_state.revealed_count > 0:
+            for i in range(st.session_state.revealed_count):
+                st.markdown(
+                    f'<div class="winner-card">'
+                    f'<div class="winner-number">🥇 Winner #{i+1}</div>'
+                    f'<div class="winner-name">{st.session_state.winners[i]}</div>'
+                    f'</div>',
+                    unsafe_allow_html=True
+                )
+            
+            if st.session_state.revealed_count == 7:
                 st.markdown("---")
-                st.markdown("### 🏆 Winners Board")
+                st.success("### 🎊 All winners have been revealed! Congratulations to all! 🎊")
+                st.snow()
                 
-                for i in range(st.session_state.revealed_count):
-                    st.markdown(
-                        f'<div class="winner-card">'
-                        f'<div class="winner-number">🥇 Winner #{i+1}</div>'
-                        f'<div class="winner-name">{st.session_state.winners[i]}</div>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                
-                if st.session_state.revealed_count == 3:
-                    st.markdown("---")
-                    st.success("### 🎊 All winners have been revealed! Congratulations to all! 🎊")
-                    st.snow()
-                    
-                    # Option to restart
-                    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-                    with col_btn2:
-                        if st.button("🔄 New Draw", use_container_width=True):
-                            st.session_state.draw_started = False
-                            st.session_state.revealed_count = 0
-                            st.session_state.winners = []
-                            st.session_state.spin_complete = [False, False, False]
-                            st.rerun()
-    else:
+                # Option to restart
+                col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+                with col_btn2:
+                    if st.button("🔄 New Draw", use_container_width=True):
+                        st.session_state.draw_started = False
+                        st.session_state.revealed_count = 0
+                        st.session_state.winners = []
+                        st.session_state.spin_complete = [False, False, False]
+                        st.rerun()
+# else:
         # Instructions when no file is uploaded
-        st.info("👈 Please upload a CSV file with participant names in the sidebar to get started!")
+        # st.info("👈 Please upload a CSV file with participant names in the sidebar to get started!")
         
         # Sample format display
         # st.markdown("### 📋 CSV Format Example")
